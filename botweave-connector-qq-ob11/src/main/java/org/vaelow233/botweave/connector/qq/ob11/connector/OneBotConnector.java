@@ -71,7 +71,7 @@ public class OneBotConnector implements Connector {
 
     @Override
     public LifecycleState state() {
-        return null;
+        return state;
     }
 
     @Override
