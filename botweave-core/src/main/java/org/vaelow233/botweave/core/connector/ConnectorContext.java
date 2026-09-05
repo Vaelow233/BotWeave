@@ -11,6 +11,13 @@ public interface ConnectorContext {
     BotRegistry bots();
     EventBus events();
     EventPublisher publisher();
+    /**
+     * @return The executor used to handle events
+     */
     Executor executor();
+    /**
+     * @return The executor used to return the async operation result
+     */
+    Executor completionExecutor();
     <T extends AutoCloseable> T manage(T resource);
 }

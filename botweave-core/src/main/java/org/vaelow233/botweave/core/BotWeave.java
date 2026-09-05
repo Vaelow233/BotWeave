@@ -21,6 +21,7 @@ public class BotWeave implements AutoCloseable {
 
     private final ExecutorService controlExecutor;
     private final ExecutorService businessExecutor;
+    private final ExecutorService completionExecutor;
     private final ExecutorService cleanupExecutor;
 
     private final AtomicReference<CompletableFuture<Void>> stopping = new AtomicReference<>();
@@ -32,9 +33,10 @@ public class BotWeave implements AutoCloseable {
 
         this.controlExecutor = Executors.newSingleThreadExecutor();
         this.businessExecutor = Executors.newFixedThreadPool(2);
+        this.completionExecutor = Executors.newFixedThreadPool(2);
         this.cleanupExecutor = Executors.newSingleThreadExecutor();
 
-        this.connectors = new ConnectorRegistry(bots, eventBus, businessExecutor, cleanupExecutor, controlExecutor);
+        this.connectors = new ConnectorRegistry(bots, eventBus, businessExecutor, completionExecutor, cleanupExecutor, controlExecutor);
     }
 
     public BotRegistry bots() {
@@ -56,6 +58,7 @@ public class BotWeave implements AutoCloseable {
         }
         connectors.stopAll().whenComplete((unused, error) -> {
             businessExecutor.shutdown();
+            completionExecutor.shutdown();
             cleanupExecutor.shutdown();
             controlExecutor.shutdown();
 

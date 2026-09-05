@@ -13,15 +13,17 @@ public class DefaultConnectorContext implements ConnectorContext {
     private final EventBus events;
     private final EventPublisher publisher;
     private final Executor executor;
+    private final Executor completionExecutor;
 
     private final ResourceManager resources = new ResourceManager();
 
-    public DefaultConnectorContext(String id, BotRegistry bots, EventBus events, EventPublisher publisher, Executor executor) {
+    public DefaultConnectorContext(String id, BotRegistry bots, EventBus events, EventPublisher publisher, Executor executor, Executor completionExecutor) {
         this.id = id;
         this.bots = bots;
         this.events = events;
         this.publisher = publisher;
         this.executor = executor;
+        this.completionExecutor = completionExecutor;
     }
 
     @Override
@@ -56,5 +58,10 @@ public class DefaultConnectorContext implements ConnectorContext {
     @Override
     public Executor executor() {
         return this.executor;
+    }
+
+    @Override
+    public Executor completionExecutor() {
+        return this.completionExecutor;
     }
 }

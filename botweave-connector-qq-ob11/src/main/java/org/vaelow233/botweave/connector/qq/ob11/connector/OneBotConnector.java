@@ -182,7 +182,7 @@ public class OneBotConnector implements Connector {
                 throw new CompletionException(error);
             }
             return reply;
-        }, context.executor());
+        }, context.completionExecutor());
     }
 
     /**

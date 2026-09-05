@@ -14,6 +14,7 @@ public class ConnectorRegistry {
     private final BotRegistry bots;
     private final SimpleEventBus events;
     private final Executor businessExecutor;
+    private final Executor completionExecutor;
     private final Executor cleanupExecutor;
     private final Executor controlExecutor;
 
@@ -25,10 +26,11 @@ public class ConnectorRegistry {
 
     private final AtomicReference<CompletableFuture<Void>> stopping = new AtomicReference<>();
 
-    public ConnectorRegistry(BotRegistry bots, SimpleEventBus events, Executor businessExecutor, Executor cleanupExecutor, Executor controlExecutor) {
+    public ConnectorRegistry(BotRegistry bots, SimpleEventBus events, Executor businessExecutor, Executor completionExecutor, Executor cleanupExecutor, Executor controlExecutor) {
         this.bots = bots;
         this.events = events;
         this.businessExecutor = businessExecutor;
+        this.completionExecutor = completionExecutor;
         this.cleanupExecutor = cleanupExecutor;
         this.controlExecutor = controlExecutor;
     }
@@ -50,7 +52,7 @@ public class ConnectorRegistry {
             if (connectors.containsKey(id)) {
                 throw new IllegalStateException("Connector already registered: " + id);
             }
-            DefaultConnectorContext context = new DefaultConnectorContext(id, bots, events, events, businessExecutor);
+            DefaultConnectorContext context = new DefaultConnectorContext(id, bots, events, events, businessExecutor, completionExecutor);
             Entry entry = new Entry(id, context);
             connectors.put(id, entry);
             entry.started.whenComplete((unused, error) -> complete(result, error));
