@@ -14,9 +14,8 @@ import org.vaelow233.botweave.api.exception.UnsupportedMessageElementException;
 import org.vaelow233.botweave.api.message.MessageContent;
 import org.vaelow233.botweave.api.message.MessageId;
 import org.vaelow233.botweave.api.message.MessageRef;
-import org.vaelow233.botweave.api.message.element.MentionElement;
-import org.vaelow233.botweave.api.message.element.MessageElement;
-import org.vaelow233.botweave.api.message.element.TextElement;
+import org.vaelow233.botweave.api.message.element.*;
+import org.vaelow233.botweave.api.message.resource.MediaSource;
 import org.vaelow233.botweave.api.user.UserId;
 import org.vaelow233.botweave.api.user.UserRef;
 import org.vaelow233.botweave.connector.qq.ob11.impl.OneBotConversation;
@@ -25,6 +24,7 @@ import org.vaelow233.botweave.connector.qq.ob11.impl.OneBotUser;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 import java.util.Optional;
 
@@ -57,6 +57,18 @@ public class OneBotCodec {
                 }
                 segment.put("type", "at");
                 data.put("qq", Long.toString(qq));
+            } else if (element instanceof ImageElement) {
+                ImageElement image = (ImageElement) element;
+                segment.put("type", "image");
+                data.put("file", encodeMediaSource(image.source()));
+            } else if (element instanceof RecordElement) {
+                RecordElement record = (RecordElement) element;
+                segment.put("type", "record");
+                data.put("file", encodeMediaSource(record.source()));
+            } else if (element instanceof VideoElement) {
+                VideoElement video = (VideoElement) element;
+                segment.put("type", "video");
+                data.put("file", encodeMediaSource(video.source()));
             } else {
                 throw new UnsupportedMessageElementException("Unsupported element: " + element.type());
             }
@@ -64,6 +76,22 @@ public class OneBotCodec {
             result.add(segment);
         }
         return result;
+    }
+
+    private static String encodeMediaSource(MediaSource source) {
+        if (source instanceof MediaSource.Url) {
+            MediaSource.Url url = (MediaSource.Url) source;
+            return url.uri().toString();
+        }
+        if (source instanceof MediaSource.Bytes) {
+            MediaSource.Bytes bytes = (MediaSource.Bytes) source;
+            return "base64://" + Base64.getEncoder().encodeToString(bytes.value());
+        }
+        if (source instanceof MediaSource.File) {
+            MediaSource.File file = (MediaSource.File) source;
+            return file.uri().toString();
+        }
+        throw new UnsupportedMessageElementException("Unsupported media source: " + source.getClass().getName());
     }
 
     public static MessageContent decodeContent(JsonNode message) {
@@ -82,6 +110,44 @@ public class OneBotCodec {
                 elements.add(new TextElement(text.textValue()));
             } else if ("at".equals(type) && !"all".equals(data.path("qq").asText())) {
                 elements.add(new MentionElement(new OneBotUser(new UserId(id(data, "qq")))));
+            } else if ("at".equals(type)) {
+                elements.add(new MentionAllElement());
+            } else if ("image".equals(type)) {
+                JsonNode file = data.get("file");
+                if (file == null || !file.isTextual()) {
+                    throw new IllegalArgumentException("Invalid file name for image");
+                }
+                JsonNode url = data.get("url");
+                if (url == null || !url.isTextual()) {
+                    throw new IllegalArgumentException("Invalid file url for image");
+                }
+                elements.add(new ImageElement(file.textValue(), MediaSource.url(url.textValue())));
+            } else if ("record".equals(type)) {
+                JsonNode file = data.get("file");
+                if (file == null || !file.isTextual()) {
+                    throw new IllegalArgumentException("Invalid file name for record");
+                }
+                JsonNode url = data.get("url");
+                if (url == null || !url.isTextual()) {
+                    throw new IllegalArgumentException("Invalid file url for record");
+                }
+                elements.add(new RecordElement(file.textValue(), MediaSource.url(url.textValue())));
+            } else if ("video".equals(type)) {
+                JsonNode file = data.get("file");
+                if (file == null || !file.isTextual()) {
+                    throw new IllegalArgumentException("Invalid file name for video");
+                }
+                JsonNode url = data.get("url");
+                if (url == null || !url.isTextual()) {
+                    throw new IllegalArgumentException("Invalid file url for video");
+                }
+                elements.add(new VideoElement(file.textValue(), MediaSource.url(url.textValue())));
+            } else if ("reply".equals(type)) {
+                JsonNode id = data.get("id");
+                if (id == null || !id.isTextual()) {
+                    throw new IllegalArgumentException("Invalid quote id");
+                }
+                elements.add(new QuoteElement(new MessageId(id.textValue())));
             } else {
                 elements.add(new RawElement(segment));
             }

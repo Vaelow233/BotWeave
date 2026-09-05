@@ -59,7 +59,7 @@ public class OneBotConnector implements Connector {
             try {
                 session.abortTransport();
             } finally {
-                loop.shutdownNow();
+                loop.shutdown();
             }
         });
     }
