@@ -292,6 +292,28 @@ public class OneBotSession extends WebSocketClient {
         post(() -> fail(ex));
     }
 
+    @Override
+    public void run() {
+        try {
+            if (!abort.get()) {
+                super.run();
+            }
+        } finally {
+            Throwable cleanupError = null;
+            try {
+                abortTransport();
+            } catch (RuntimeException error) {
+                cleanupError = error;
+            }
+            post(() -> fail(new IOException("WebSocket reader terminated")));
+            if (cleanupError == null) {
+                ended.complete(null);
+            } else {
+                ended.completeExceptionally(cleanupError);
+            }
+        }
+    }
+
     private static final class Pending {
         private final String action;
         private final CompletableFuture<Reply> result;
