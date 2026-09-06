@@ -13,18 +13,17 @@ import org.vaelow233.botweave.api.message.MessageId;
 import org.vaelow233.botweave.api.message.SentMessage;
 import org.vaelow233.botweave.connector.qq.ob11.codec.OneBotCodec;
 import org.vaelow233.botweave.connector.qq.ob11.session.OneBotSession;
+import org.vaelow233.botweave.api.util.CollectionUtil;
 
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.BiFunction;
 
 public class OneBotMessaging implements Messaging {
-    private static final Set<String> PRIVATE_TYPES = Collections.singleton("text");
-    private static final Set<String> GROUP_TYPES = Collections.unmodifiableSet(new HashSet<>(Arrays.asList("text", "mention")));
+    private static final Set<String> PRIVATE_TYPES = CollectionUtil.ofSet("text", "image", "quote", "record", "video");
+    private static final Set<String> GROUP_TYPES = CollectionUtil.ofSet("text", "mention", "mention-all", "image", "quote", "record", "video");
     private final BotId botId;
     /**
      * Accept the action and params (body), returns a completion stage
@@ -75,6 +74,20 @@ public class OneBotMessaging implements Messaging {
         } catch (RuntimeException e) {
             // Return the stage with the exception
             CompletableFuture<SentMessage> failed = new CompletableFuture<>();
+            failed.completeExceptionally(e);
+            return failed;
+        }
+    }
+
+    @Override
+    public CompletionStage<Void> recall(MessageId messageId) {
+        try {
+            long id = Long.parseLong(messageId.value());
+            ObjectNode params = JsonNodeFactory.instance.objectNode();
+            params.put("message_id", id);
+            return caller.apply("delete_msg", params).thenApply(reply -> null);
+        } catch (RuntimeException e) {
+            CompletableFuture<Void> failed = new CompletableFuture<>();
             failed.completeExceptionally(e);
             return failed;
         }

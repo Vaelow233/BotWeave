@@ -4,8 +4,14 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.vaelow233.botweave.api.bot.BotId;
+import org.vaelow233.botweave.api.capability.GroupModeration;
+import org.vaelow233.botweave.api.capability.GroupQuery;
+import org.vaelow233.botweave.api.capability.MemberQuery;
 import org.vaelow233.botweave.api.event.MessageReceivedEvent;
 import org.vaelow233.botweave.connector.qq.ob11.bot.OneBotBot;
+import org.vaelow233.botweave.connector.qq.ob11.capability.OneBotGroupModeration;
+import org.vaelow233.botweave.connector.qq.ob11.capability.OneBotGroupQuery;
+import org.vaelow233.botweave.connector.qq.ob11.capability.OneBotMemberQuery;
 import org.vaelow233.botweave.connector.qq.ob11.capability.OneBotMessaging;
 import org.vaelow233.botweave.connector.qq.ob11.codec.OneBotCodec;
 import org.vaelow233.botweave.connector.qq.ob11.config.OneBotConfig;
@@ -136,7 +142,10 @@ public class OneBotConnector implements Connector {
         // Set botId, create capabilities and bot instance, update status, register the bots, trigger the startup events
         BotId botId = new BotId("qq-onebot-11:" + selfId);
         OneBotMessaging messaging = new OneBotMessaging(botId, this::call);
-        bot = new OneBotBot(botId, messaging);
+        GroupModeration groupModeration = new OneBotGroupModeration(botId, this::call);
+        GroupQuery groupQuery = new OneBotGroupQuery(botId, this::call);
+        MemberQuery memberQuery = new OneBotMemberQuery(botId, this::call);
+        bot = new OneBotBot(botId, messaging, groupModeration, groupQuery, memberQuery);
         updateOperational(status);
         context.bots().register(bot);
         registered = true;

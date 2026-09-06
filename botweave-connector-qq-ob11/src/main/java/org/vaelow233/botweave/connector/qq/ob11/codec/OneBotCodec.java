@@ -9,6 +9,8 @@ import org.vaelow233.botweave.api.bot.BotNetwork;
 import org.vaelow233.botweave.api.conversation.ConversationId;
 import org.vaelow233.botweave.api.conversation.ConversationKind;
 import org.vaelow233.botweave.api.conversation.ConversationRef;
+import org.vaelow233.botweave.api.conversation.group.GroupProfile;
+import org.vaelow233.botweave.api.conversation.group.MemberProfile;
 import org.vaelow233.botweave.api.event.MessageReceivedEvent;
 import org.vaelow233.botweave.api.exception.UnsupportedMessageElementException;
 import org.vaelow233.botweave.api.message.MessageContent;
@@ -18,15 +20,10 @@ import org.vaelow233.botweave.api.message.element.*;
 import org.vaelow233.botweave.api.message.resource.MediaSource;
 import org.vaelow233.botweave.api.user.UserId;
 import org.vaelow233.botweave.api.user.UserRef;
-import org.vaelow233.botweave.connector.qq.ob11.impl.OneBotConversation;
-import org.vaelow233.botweave.connector.qq.ob11.impl.OneBotMessage;
-import org.vaelow233.botweave.connector.qq.ob11.impl.OneBotUser;
+import org.vaelow233.botweave.connector.qq.ob11.impl.*;
 
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 public class OneBotCodec {
     private static final JsonNodeFactory JSON = JsonNodeFactory.instance;
@@ -69,6 +66,17 @@ public class OneBotCodec {
                 VideoElement video = (VideoElement) element;
                 segment.put("type", "video");
                 data.put("file", encodeMediaSource(video.source()));
+            } else if (element instanceof MentionAllElement) {
+                if (!ConversationKind.GROUP.equals(conversation.kind())) {
+                    throw new UnsupportedMessageElementException("Mention-all is only supported in group conversations");
+                }
+                segment.put("type", "at");
+                data.put("qq", "all");
+            } else if (element instanceof QuoteElement) {
+                QuoteElement quote = (QuoteElement) element;
+                int quotedId = Integer.parseInt(quote.messageId().value());
+                segment.put("type", "reply");
+                data.put("id", Integer.toString(quotedId));
             } else {
                 throw new UnsupportedMessageElementException("Unsupported element: " + element.type());
             }
@@ -92,6 +100,52 @@ public class OneBotCodec {
             return file.uri().toString();
         }
         throw new UnsupportedMessageElementException("Unsupported media source: " + source.getClass().getName());
+    }
+
+    public static OneBotGroupProfile decodeGroupProfile(JsonNode node) {
+        long groupId = node.get("group_id").longValue();
+        String groupName = node.get("group_name").textValue();
+        long memberCount = node.get("member_count").longValue();
+        return new OneBotGroupProfile(
+                new OneBotConversation(new ConversationId(String.valueOf(groupId)), ConversationKind.GROUP),
+                groupName,
+                memberCount
+        );
+    }
+
+    public static Set<GroupProfile> decodeGroupProfiles(JsonNode node) {
+        if (!node.isArray()) {
+            throw new IllegalArgumentException("Expecting an array node of group profiles");
+        }
+        Set<GroupProfile> result = new HashSet<>();
+        for (int i = 0; i < node.size(); i++) {
+            result.add(decodeGroupProfile(node.get(i)));
+        }
+        return result;
+    }
+
+    public static OneBotMemberProfile decodeMemberProfile(JsonNode node) {
+        long groupId = node.get("group_id").longValue();
+        long userId = node.get("user_id").longValue();
+        String name = node.get("nickname").textValue();
+        String displayName = node.get("card").textValue();
+        return new OneBotMemberProfile(
+                new OneBotConversation(new ConversationId(String.valueOf(groupId)), ConversationKind.GROUP),
+                new OneBotUser(new UserId(String.valueOf(userId))),
+                name,
+                displayName
+        );
+    }
+
+    public static Set<MemberProfile> decodeMemberProfiles(JsonNode node) {
+        if (!node.isArray()) {
+            throw new IllegalArgumentException("Expecting an array node of group profiles");
+        }
+        Set<MemberProfile> result = new HashSet<>();
+        for (int i = 0; i < node.size(); i++) {
+            result.add(decodeMemberProfile(node.get(i)));
+        }
+        return result;
     }
 
     public static MessageContent decodeContent(JsonNode message) {
