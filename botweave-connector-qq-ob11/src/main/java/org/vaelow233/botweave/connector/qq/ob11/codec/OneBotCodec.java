@@ -11,6 +11,7 @@ import org.vaelow233.botweave.api.conversation.ConversationKind;
 import org.vaelow233.botweave.api.conversation.ConversationRef;
 import org.vaelow233.botweave.api.conversation.group.GroupProfile;
 import org.vaelow233.botweave.api.conversation.group.MemberProfile;
+import org.vaelow233.botweave.api.conversation.group.MemberRole;
 import org.vaelow233.botweave.api.event.MessageReceivedEvent;
 import org.vaelow233.botweave.api.exception.UnsupportedMessageElementException;
 import org.vaelow233.botweave.api.message.MessageContent;
@@ -103,11 +104,11 @@ public class OneBotCodec {
     }
 
     public static OneBotGroupProfile decodeGroupProfile(JsonNode node) {
-        long groupId = node.get("group_id").longValue();
-        String groupName = node.get("group_name").textValue();
-        long memberCount = node.get("member_count").longValue();
+        String groupId = id(node, "group_id");
+        String groupName = node.get("group_name").asText();
+        long memberCount = node.get("member_count").asLong();
         return new OneBotGroupProfile(
-                new OneBotConversation(new ConversationId(String.valueOf(groupId)), ConversationKind.GROUP),
+                new OneBotConversation(new ConversationId(groupId), ConversationKind.GROUP),
                 groupName,
                 memberCount
         );
@@ -124,16 +125,27 @@ public class OneBotCodec {
         return result;
     }
 
+    private static Optional<MemberRole> decodeMemberRole(JsonNode node) {
+        switch (node.path("role").asText("")) {
+            case "owner": return Optional.of(MemberRole.OWNER);
+            case "admin": return Optional.of(MemberRole.ADMIN);
+            case "member": return Optional.of(MemberRole.MEMBER);
+            default: return Optional.empty();
+        }
+    }
+
     public static OneBotMemberProfile decodeMemberProfile(JsonNode node) {
-        long groupId = node.get("group_id").longValue();
-        long userId = node.get("user_id").longValue();
-        String name = node.get("nickname").textValue();
-        String displayName = node.get("card").textValue();
+        String groupId = id(node, "group_id");
+        String userId = id(node, "user_id");
+        String name = node.get("nickname").asText();
+        String card = node.get("card").asText();
+        String displayName = card.isEmpty() ? name : card;
         return new OneBotMemberProfile(
-                new OneBotConversation(new ConversationId(String.valueOf(groupId)), ConversationKind.GROUP),
-                new OneBotUser(new UserId(String.valueOf(userId))),
+                new OneBotConversation(new ConversationId(groupId), ConversationKind.GROUP),
+                new OneBotUser(new UserId(userId)),
                 name,
-                displayName
+                displayName,
+                decodeMemberRole(node)
         );
     }
 
