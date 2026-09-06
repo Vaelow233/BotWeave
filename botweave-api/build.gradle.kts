@@ -1,6 +1,7 @@
 plugins {
     id("java")
     id("java-library")
+    id("maven-publish")
 }
 
 repositories {
@@ -28,4 +29,12 @@ java {
 
 tasks.withType<JavaCompile>().configureEach {
     options.encoding = "UTF-8"
+}
+
+publishing {
+    publications {
+        create<MavenPublication>("mavenJava") {
+            from(components["java"])
+        }
+    }
 }

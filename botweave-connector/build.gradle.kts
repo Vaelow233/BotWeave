@@ -1,5 +1,4 @@
 plugins {
-    id("java")
     id("java-library")
     id("maven-publish")
 }
@@ -9,7 +8,7 @@ repositories {
 }
 
 dependencies {
-    api(project(":botweave-api"))
+    api(project(":botweave-connector-qq-ob11"))
 }
 
 java {
@@ -19,10 +18,6 @@ java {
 
     sourceCompatibility = JavaVersion.VERSION_1_8
     targetCompatibility = JavaVersion.VERSION_1_8
-}
-
-tasks.withType<JavaCompile>().configureEach {
-    options.encoding = "UTF-8"
 }
 
 publishing {
