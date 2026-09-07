@@ -1,4 +1,4 @@
-rootProject.name = "botweave"
+rootProject.name = "BotWeave"
 include("botweave-api")
 include("botweave-core")
 include("botweave-connector-qq-ob11")
