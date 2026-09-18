@@ -7,6 +7,7 @@ import org.vaelow233.botweave.api.bot.BotId;
 import org.vaelow233.botweave.api.capability.GroupModeration;
 import org.vaelow233.botweave.api.capability.GroupQuery;
 import org.vaelow233.botweave.api.capability.MemberQuery;
+import org.vaelow233.botweave.api.event.BotEvent;
 import org.vaelow233.botweave.api.event.MessageReceivedEvent;
 import org.vaelow233.botweave.connector.qq.ob11.bot.OneBotBot;
 import org.vaelow233.botweave.connector.qq.ob11.capability.OneBotGroupModeration;
@@ -206,6 +207,8 @@ public class OneBotConnector implements Connector {
         if (state == LifecycleState.STARTING) {
             if ("message".equals(event.path("post_type").asText())) {
                 startupEvents.addLast(event);
+            } else if ("notice".equals(event.path("post_type").asText())) {
+                startupEvents.addLast(event);
             }
             return;
         }
@@ -229,14 +232,14 @@ public class OneBotConnector implements Connector {
                 // Ignored the message that sent by self
                 return;
             }
-            Optional<MessageReceivedEvent> decoded = OneBotCodec.decodeEvent(bot, event);
+            Optional<? extends BotEvent> decoded = OneBotCodec.decodeEvent(bot, event);
             if (!decoded.isPresent()) {
                 return;
             }
-            MessageReceivedEvent messageEvent = decoded.get();
+            BotEvent botEvent = decoded.get();
             context.executor().execute(() -> {
                 if (state == LifecycleState.RUNNING) {
-                    context.publisher().publish(messageEvent);
+                    context.publisher().publish(botEvent);
                 }
             });
         } catch (RuntimeException e) {

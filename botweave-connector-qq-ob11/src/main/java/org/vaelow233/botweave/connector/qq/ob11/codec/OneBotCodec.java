@@ -12,7 +12,7 @@ import org.vaelow233.botweave.api.conversation.ConversationRef;
 import org.vaelow233.botweave.api.conversation.group.GroupProfile;
 import org.vaelow233.botweave.api.conversation.group.MemberProfile;
 import org.vaelow233.botweave.api.conversation.group.MemberRole;
-import org.vaelow233.botweave.api.event.MessageReceivedEvent;
+import org.vaelow233.botweave.api.event.*;
 import org.vaelow233.botweave.api.exception.UnsupportedMessageElementException;
 import org.vaelow233.botweave.api.message.MessageContent;
 import org.vaelow233.botweave.api.message.MessageId;
@@ -23,6 +23,7 @@ import org.vaelow233.botweave.api.user.UserId;
 import org.vaelow233.botweave.api.user.UserRef;
 import org.vaelow233.botweave.connector.qq.ob11.impl.*;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
 
@@ -134,6 +135,23 @@ public class OneBotCodec {
         }
     }
 
+    private static Optional<MemberIncreaseEvent.SubType> decodeMemberIncreaseType(JsonNode node) {
+        switch (node.path("sub_type").asText()) {
+            case "approve": return Optional.of(MemberIncreaseEvent.SubType.APPROVE);
+            case "invite": return Optional.of(MemberIncreaseEvent.SubType.INVITE);
+            default: return Optional.empty();
+        }
+    }
+
+    private static Optional<MemberDecreaseEvent.SubType> decodeMemberDecreaseType(JsonNode node) {
+        switch (node.path("sub_type").asText()) {
+            case "leave": return Optional.of(MemberDecreaseEvent.SubType.LEAVE);
+            case "kick": return Optional.of(MemberDecreaseEvent.SubType.KICK);
+            case "kick_me": return Optional.of(MemberDecreaseEvent.SubType.KICK_ME);
+            default: return Optional.empty();
+        }
+    }
+
     public static OneBotMemberProfile decodeMemberProfile(JsonNode node) {
         String groupId = id(node, "group_id");
         String userId = id(node, "user_id");
@@ -221,10 +239,127 @@ public class OneBotCodec {
         return new MessageContent(elements);
     }
 
-    public static Optional<MessageReceivedEvent> decodeEvent(Bot bot, JsonNode event) {
-        if (!"message".equals(event.path("post_type").asText())) {
-            return Optional.empty();
+    public static Optional<? extends BotEvent> decodeEvent(Bot bot, JsonNode event) {
+        if ("message".equals(event.path("post_type").asText())) {
+            return decodeMessageEvent(bot, event);
+        } else if ("notice".equals(event.path("post_type").asText())) {
+            return decodeNoticeEvent(bot, event);
         }
+        return Optional.empty();
+    }
+
+    public static Optional<? extends BotEvent> decodeNoticeEvent(Bot bot, JsonNode event) {
+        String noticeType = event.path("notice_type").asText();
+        Instant timestamp = Instant.ofEpochSecond(Long.parseLong(id(event, "time")));
+        if ("group_decrease".equals(noticeType)) {
+            return Optional.of(new MemberDecreaseEvent(
+                    bot,
+                    new OneBotConversation(
+                            new ConversationId(id(event, "group_id")),
+                            ConversationKind.GROUP
+                    ),
+                    new OneBotUser(new UserId(id(event, "operator_id"))),
+                    new OneBotUser(new UserId(id(event, "user_id"))),
+                    decodeMemberDecreaseType(event),
+                    timestamp
+            ));
+        } else if ("group_increase".equals(noticeType)) {
+            return Optional.of(new MemberIncreaseEvent(
+                    bot,
+                    new OneBotConversation(
+                            new ConversationId(id(event, "group_id")),
+                            ConversationKind.GROUP
+                    ),
+                    new OneBotUser(new UserId(id(event, "operator_id"))),
+                    new OneBotUser(new UserId(id(event, "user_id"))),
+                    decodeMemberIncreaseType(event),
+                    timestamp
+            ));
+        } else if ("group_ban".equals(noticeType)) {
+            return decodeMuteEvent(bot, event);
+        } else if ("group_recall".equals(noticeType)) {
+            return Optional.of(new MessageUndoEvent(
+                    bot,
+                    new OneBotConversation(
+                            new ConversationId(id(event, "group_id")),
+                            ConversationKind.GROUP
+                    ),
+                    new MessageId(id(event, "message_id")),
+                    new OneBotUser(new UserId(id(event, "operator_id"))),
+                    new OneBotUser(new UserId(id(event, "user_id"))),
+                    timestamp
+            ));
+        } else if ("friend_recall".equals(noticeType)) {
+            return Optional.of(new MessageUndoEvent(
+                    bot,
+                    new OneBotConversation(
+                            new ConversationId(id(event, "user_id")),
+                            ConversationKind.PRIVATE
+                    ),
+                    new MessageId(id(event, "message_id")),
+                    new OneBotUser(new UserId(id(event, "user_id"))),
+                    new OneBotUser(new UserId(id(event, "user_id"))),
+                    timestamp
+            ));
+        }
+        return Optional.empty();
+    }
+
+    public static Optional<? extends BotEvent> decodeMuteEvent(Bot bot, JsonNode event) {
+        Instant timestamp = Instant.ofEpochSecond(Long.parseLong(id(event, "time")));
+        if ("ban".equals(event.path("sub_type").asText())) {
+            if ("0".equals(id(event, "user_id"))) {
+                return Optional.of(new GroupGlobalMuteEvent(
+                        bot,
+                        new OneBotConversation(
+                                new ConversationId(id(event, "group_id")),
+                                ConversationKind.GROUP
+                        ),
+                        new OneBotUser(new UserId(id(event, "operator_id"))),
+                        Duration.ZERO,
+                        timestamp
+                ));
+            }
+            return Optional.of(new MemberMuteEvent(
+                    bot,
+                    new OneBotConversation(
+                            new ConversationId(id(event, "group_id")),
+                            ConversationKind.GROUP
+                    ),
+                    new OneBotUser(new UserId(id(event, "operator_id"))),
+                    new OneBotUser(new UserId(id(event, "user_id"))),
+                    Duration.ofSeconds(event.get("duration").asLong()),
+                    timestamp
+            ));
+        } else if ("lift_ban".equals(event.path("sub_type").asText())) {
+            if ("0".equals(id(event, "user_id"))) {
+                return Optional.of(new GroupGlobalUnmuteEvent(
+                        bot,
+                        new OneBotConversation(
+                                new ConversationId(id(event, "group_id")),
+                                ConversationKind.GROUP
+                        ),
+                        new OneBotUser(new UserId(id(event, "operator_id"))),
+                        Duration.ZERO,
+                        timestamp
+                ));
+            }
+            return Optional.of(new MemberUnmuteEvent(
+                    bot,
+                    new OneBotConversation(
+                            new ConversationId(id(event, "group_id")),
+                            ConversationKind.GROUP
+                    ),
+                    new OneBotUser(new UserId(id(event, "operator_id"))),
+                    new OneBotUser(new UserId(id(event, "user_id"))),
+                    Duration.ofSeconds(event.get("duration").asLong()),
+                    timestamp
+            ));
+        }
+        return Optional.empty();
+    }
+
+    public static Optional<MessageReceivedEvent> decodeMessageEvent(Bot bot, JsonNode event) {
         String messageType = event.path("message_type").asText();
         String subType = event.path("sub_type").asText();
         ConversationRef conversation;
