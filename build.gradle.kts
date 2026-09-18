@@ -11,7 +11,7 @@ plugins {
 
 allprojects {
     group = "org.vaelow233.botweave"
-    version = "1.0.0"
+    version = "1.0.1"
 }
 
 val releaseModules = listOf(

@@ -32,7 +32,7 @@ The examples below use `botweave-connector`, which brings in all official connec
 <dependency>
     <groupId>org.vaelow233.botweave</groupId>
     <artifactId>botweave-connector</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1</version>
 </dependency>
 ```
 
@@ -40,7 +40,7 @@ The examples below use `botweave-connector`, which brings in all official connec
 
 ```groovy
 dependencies {
-    implementation 'org.vaelow233.botweave:botweave-connector:1.0.0'
+    implementation 'org.vaelow233.botweave:botweave-connector:1.0.1'
 }
 ```
 
@@ -48,7 +48,7 @@ dependencies {
 
 ```kotlin
 dependencies {
-    implementation("org.vaelow233.botweave:botweave-connector:1.0.0")
+    implementation("org.vaelow233.botweave:botweave-connector:1.0.1")
 }
 ```
 
