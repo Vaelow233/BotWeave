@@ -3,19 +3,18 @@ package org.vaelow233.botweave.api.event;
 import org.vaelow233.botweave.api.bot.Bot;
 import org.vaelow233.botweave.api.conversation.ConversationRef;
 import org.vaelow233.botweave.api.message.MessageId;
-import org.vaelow233.botweave.api.message.MessageRef;
 import org.vaelow233.botweave.api.user.UserRef;
 
 import java.time.Instant;
 
-public class MessageUndoEvent implements BotEvent {
+public class MessageRecalledEvent implements BotEvent {
     private final Bot bot;
     private final ConversationRef conversation;
     private final MessageId message;
     private final UserRef operator;
     private final UserRef user;
     private final Instant time;
-    public MessageUndoEvent(Bot bot, ConversationRef conversation, MessageId message, UserRef operator, UserRef user, Instant time) {
+    public MessageRecalledEvent(Bot bot, ConversationRef conversation, MessageId message, UserRef operator, UserRef user, Instant time) {
         this.bot = bot;
         this.conversation = conversation;
         this.message = message;
@@ -26,7 +25,7 @@ public class MessageUndoEvent implements BotEvent {
 
     @Override
     public String type() {
-        return "message-undo";
+        return "message-recalled";
     }
 
     @Override
@@ -39,7 +38,7 @@ public class MessageUndoEvent implements BotEvent {
         return this.time;
     }
 
-    public MessageId message() {
+    public MessageId messageId() {
         return this.message;
     }
 

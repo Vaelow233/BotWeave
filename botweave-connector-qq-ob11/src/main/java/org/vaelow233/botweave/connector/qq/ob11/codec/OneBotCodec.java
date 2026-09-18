@@ -278,7 +278,7 @@ public class OneBotCodec {
         } else if ("group_ban".equals(noticeType)) {
             return decodeMuteEvent(bot, event);
         } else if ("group_recall".equals(noticeType)) {
-            return Optional.of(new MessageUndoEvent(
+            return Optional.of(new MessageRecalledEvent(
                     bot,
                     new OneBotConversation(
                             new ConversationId(id(event, "group_id")),
@@ -290,7 +290,7 @@ public class OneBotCodec {
                     timestamp
             ));
         } else if ("friend_recall".equals(noticeType)) {
-            return Optional.of(new MessageUndoEvent(
+            return Optional.of(new MessageRecalledEvent(
                     bot,
                     new OneBotConversation(
                             new ConversationId(id(event, "user_id")),
@@ -340,7 +340,6 @@ public class OneBotCodec {
                                 ConversationKind.GROUP
                         ),
                         new OneBotUser(new UserId(id(event, "operator_id"))),
-                        Duration.ZERO,
                         timestamp
                 ));
             }
@@ -352,7 +351,6 @@ public class OneBotCodec {
                     ),
                     new OneBotUser(new UserId(id(event, "operator_id"))),
                     new OneBotUser(new UserId(id(event, "user_id"))),
-                    Duration.ofSeconds(event.get("duration").asLong()),
                     timestamp
             ));
         }

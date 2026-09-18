@@ -11,13 +11,11 @@ public class GroupGlobalUnmuteEvent implements BotEvent {
     private final Bot bot;
     private final ConversationRef conversation;
     private final UserRef operator;
-    private final Duration duration;
     private final Instant time;
-    public GroupGlobalUnmuteEvent(Bot bot, ConversationRef conversation, UserRef operator, Duration duration, Instant time) {
+    public GroupGlobalUnmuteEvent(Bot bot, ConversationRef conversation, UserRef operator, Instant time) {
         this.bot = bot;
         this.conversation = conversation;
         this.operator = operator;
-        this.duration = duration;
         this.time = time;
     }
 
@@ -42,9 +40,5 @@ public class GroupGlobalUnmuteEvent implements BotEvent {
 
     public UserRef operator() {
         return operator;
-    }
-
-    public Duration duration() {
-        return duration;
     }
 }

@@ -12,14 +12,12 @@ public class MemberUnmuteEvent implements BotEvent {
     private final ConversationRef conversation;
     private final UserRef operator;
     private final UserRef user;
-    private final Duration duration;
     private final Instant time;
-    public MemberUnmuteEvent(Bot bot, ConversationRef conversation, UserRef operator, UserRef user, Duration duration, Instant time) {
+    public MemberUnmuteEvent(Bot bot, ConversationRef conversation, UserRef operator, UserRef user, Instant time) {
         this.bot = bot;
         this.conversation = conversation;
         this.operator = operator;
         this.user = user;
-        this.duration = duration;
         this.time = time;
     }
 
@@ -48,9 +46,5 @@ public class MemberUnmuteEvent implements BotEvent {
 
     public UserRef operator() {
         return operator;
-    }
-
-    public Duration duration() {
-        return duration;
     }
 }
