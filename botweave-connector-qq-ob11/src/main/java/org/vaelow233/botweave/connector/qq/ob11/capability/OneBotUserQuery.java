@@ -30,11 +30,11 @@ public class OneBotUserQuery implements UserQuery {
     public CompletionStage<UserProfile> getUser(UserRef user) {
         try {
             if (!BotNetwork.QQ_ONEBOT_11.equals(user.network())) {
-                throw new IllegalArgumentException("Conversation belongs to another network");
+                throw new IllegalArgumentException("User belongs to another network");
             }
             long userId = Long.parseLong(user.id().value());
             if (userId <= 0) {
-                throw new IllegalArgumentException("Invalid conversation ID");
+                throw new IllegalArgumentException("Invalid user ID");
             }
             ObjectNode params = JsonNodeFactory.instance.objectNode();
             params.put("user_id", userId);
