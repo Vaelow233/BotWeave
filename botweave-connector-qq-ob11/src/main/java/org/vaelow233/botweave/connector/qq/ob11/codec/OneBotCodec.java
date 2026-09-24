@@ -21,6 +21,7 @@ import org.vaelow233.botweave.api.message.element.*;
 import org.vaelow233.botweave.api.message.resource.MediaSource;
 import org.vaelow233.botweave.api.user.UserId;
 import org.vaelow233.botweave.api.user.UserRef;
+import org.vaelow233.botweave.api.user.UserSex;
 import org.vaelow233.botweave.connector.qq.ob11.impl.*;
 
 import java.time.Duration;
@@ -115,6 +116,17 @@ public class OneBotCodec {
         );
     }
 
+    public static OneBotUserProfile decodeUserProfile(JsonNode node) {
+        String userId = id(node, "user_id");
+        String nickname = node.get("nickname").asText();
+        return new OneBotUserProfile(
+                new OneBotUser(new UserId(userId)),
+                nickname,
+                decodeUserSex(node),
+                Optional.empty()
+        );
+    }
+
     public static Set<GroupProfile> decodeGroupProfiles(JsonNode node) {
         if (!node.isArray()) {
             throw new IllegalArgumentException("Expecting an array node of group profiles");
@@ -124,6 +136,14 @@ public class OneBotCodec {
             result.add(decodeGroupProfile(node.get(i)));
         }
         return result;
+    }
+
+    private static UserSex decodeUserSex(JsonNode node) {
+        switch (node.path("sex").asText("")) {
+            case "male": return UserSex.MALE;
+            case "female": return UserSex.FEMALE;
+            default: return UserSex.UNKNOWN;
+        }
     }
 
     private static Optional<MemberRole> decodeMemberRole(JsonNode node) {

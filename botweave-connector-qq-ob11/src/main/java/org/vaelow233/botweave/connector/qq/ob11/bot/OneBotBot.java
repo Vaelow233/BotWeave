@@ -13,12 +13,13 @@ import java.util.Set;
 public class OneBotBot extends AbstractBot {
     private volatile BotState state = new BotState(false);
 
-    public OneBotBot(BotId id, Messaging messaging, GroupModeration groupModeration, GroupQuery groupQuery, MemberQuery memberQuery) {
+    public OneBotBot(BotId id, Messaging messaging, GroupModeration groupModeration, GroupQuery groupQuery, MemberQuery memberQuery, UserQuery userQuery) {
         super(id, BotNetwork.QQ_ONEBOT_11);
         registerCapability(Messaging.class, messaging);
         registerCapability(GroupModeration.class, groupModeration);
         registerCapability(GroupQuery.class, groupQuery);
         registerCapability(MemberQuery.class, memberQuery);
+        registerCapability(UserQuery.class, userQuery);
     }
 
     @Override
@@ -28,7 +29,7 @@ public class OneBotBot extends AbstractBot {
 
     @Override
     public Set<String> capabilities() {
-        return CollectionUtil.ofSet("messaging", "group-moderation", "group-query", "member-query");
+        return CollectionUtil.ofSet("messaging", "group-moderation", "group-query", "member-query", "user-query");
     }
 
     public void setOperational(boolean operational) {
